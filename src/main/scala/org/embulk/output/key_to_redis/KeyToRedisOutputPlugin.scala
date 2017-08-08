@@ -10,7 +10,8 @@ class KeyToRedisOutputPlugin extends OutputPlugin {
                       schema: Schema,
                       taskCount: Int,
                       control: OutputPlugin.Control): ConfigDiff =
-    throw new UnsupportedOperationException("key to redis output plugin does not support resuming")
+    throw new UnsupportedOperationException(
+      "key to redis output plugin does not support resuming")
 
   override def cleanup(taskSource: TaskSource,
                        schema: Schema,
