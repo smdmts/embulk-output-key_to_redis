@@ -1,13 +1,13 @@
 # Key To Redis output plugin for Embulk
 
-Output the aggregated key into set of the Redis plugin.  
+Output the aggregated key into set of the Redis plugin.  
 
 This plugin is designed to extract data set diff files used with the combination in below use cases.
 
 1. Use this plugin and output specified key's to redis.
-  - this plugin.
+    - this plugin.
 2. Input another data source and use filter key_in_redis plugin with specified key's then filtered the key's (or that hash).  
-  - https://github.com/smdmts/embulk-filter-key_in_redis
+    - https://github.com/smdmts/embulk-filter-key_in_redis
 
  
 ## Overview
