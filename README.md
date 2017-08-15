@@ -1,6 +1,6 @@
 # Key To Redis output plugin for Embulk
 
-Output the aggregated key into set of the Redis plugin.  
+Generate the aggregated key from input values and output to Redis's SET value.
 
 This plugin is designed to extract data set diff files used with the combination in below use cases.
 
