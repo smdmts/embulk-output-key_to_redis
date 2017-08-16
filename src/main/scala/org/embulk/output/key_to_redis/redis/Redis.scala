@@ -23,9 +23,8 @@ case class Redis(setKey: String, host: String, port: Int, db: Option[Int]) {
     }
     Await.result(s, 10.minute)
   }
-  def sadd(value: String): Long = {
-    val s = redis.sadd(setKey, value)
-    Await.result(s, 10.minute)
+  def sadd(value: String): Future[Long] = {
+    redis.sadd(setKey, value)
   }
 
   def flush(): Boolean = {

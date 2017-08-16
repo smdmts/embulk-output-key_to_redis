@@ -8,8 +8,12 @@ import org.embulk.output.key_to_redis.column._
 import org.embulk.spi.time.TimestampFormatter
 import org.embulk.spi._
 import org.bouncycastle.util.encoders.Hex
+import org.embulk.output.key_to_redis.redis.Redis
 
 import scala.collection.JavaConverters._
+import scala.concurrent.duration._
+import scala.collection.mutable.ListBuffer
+import scala.concurrent.{Await, Future}
 
 case class PageOutput(taskSource: TaskSource,
                       schema: Schema,
@@ -20,6 +24,9 @@ case class PageOutput(taskSource: TaskSource,
 
   def timestampFormatter(): TimestampFormatter =
     new TimestampFormatter(task, Optional.absent())
+
+  val buffer = new ListBuffer[Future[Long]]
+  val redis: Redis = KeyToRedisOutputPlugin.redis.getOrElse(sys.error("could not find redis."))
 
   override def add(page: Page): Unit = {
     val reader: PageReader = new PageReader(schema)
@@ -37,17 +44,21 @@ case class PageOutput(taskSource: TaskSource,
         if (putAsMD5) {
           val hash = Hex.toHexString(
             digestMd5.digest(setValueVisitor.getValue.getBytes()))
-          KeyToRedisOutputPlugin.redis.foreach(_.sadd(hash))
+          buffer.append(redis.sadd(hash))
         } else {
-          KeyToRedisOutputPlugin.redis.foreach(
-            _.sadd(setValueVisitor.getValue))
+          buffer.append(redis.sadd(setValueVisitor.getValue))
         }
       }
     }
     reader.close()
   }
 
-  override def finish(): Unit = ()
+  override def finish(): Unit = {
+    import scala.concurrent.ExecutionContext.Implicits.global
+    val sequence = Future.sequence(buffer)
+    Await.result(sequence, Duration.Inf)
+  }
+
   override def close(): Unit = ()
   override def commit(): TaskReport = Exec.newTaskReport
   override def abort(): Unit = ()
