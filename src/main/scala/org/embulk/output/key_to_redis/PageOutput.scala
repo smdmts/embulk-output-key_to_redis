@@ -26,7 +26,8 @@ case class PageOutput(taskSource: TaskSource,
     new TimestampFormatter(task, Optional.absent())
 
   val buffer = new ListBuffer[Future[Long]]
-  val redis: Redis = KeyToRedisOutputPlugin.redis.getOrElse(sys.error("could not find redis."))
+  val redis: Redis =
+    KeyToRedisOutputPlugin.redis.getOrElse(sys.error("could not find redis."))
 
   override def add(page: Page): Unit = {
     val reader: PageReader = new PageReader(schema)
