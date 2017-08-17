@@ -26,6 +26,7 @@ This plugin is designed to extract data set diff files used with the combination
 |  port                                | integer     | optional   | "6379"                   | redis servers port     |
 |  db                                  | integer     | optional   | "null"                   | redis servers db       |
 |  flush_on_start                      | boolean     | optional   | "false"                  | flush on start specified redis servers db |
+|  delete_key_on_start                 | boolean     | optional   | "false"                  | delete key on start |
 |  redis_set_key                       | string      | required   |                          | redis of key of set name |
 |  appender                            | string      | optional   | "-"                      | multi key of appender  |
 |  put_as_md5                          | boolean     | optional   | "false"                  | sadd the value to converted md5 |
