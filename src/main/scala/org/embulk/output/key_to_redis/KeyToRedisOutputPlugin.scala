@@ -14,6 +14,7 @@ class KeyToRedisOutputPlugin extends OutputPlugin {
                            control: OutputPlugin.Control): ConfigDiff = {
     val task = config.loadConfig(classOf[PluginTask])
     KeyToRedisOutputPlugin.createRedisInstance(task)
+    KeyToRedisOutputPlugin.taskCountOpt = Some(taskCount)
     if (task.getFlushOnStart) {
       KeyToRedisOutputPlugin.redis.foreach(_.flush())
     }
@@ -44,13 +45,17 @@ class KeyToRedisOutputPlugin extends OutputPlugin {
       case None => // for map reduce executor.
         KeyToRedisOutputPlugin.createRedisInstance(task)
     }
-    PageOutput(taskSource, schema, task.getPutAsMD5)
+    PageOutput(taskSource,
+               schema,
+               KeyToRedisOutputPlugin.taskCountOpt,
+               task.getPutAsMD5)
   }
 
 }
 
 object KeyToRedisOutputPlugin {
   var redis: Option[Redis] = None
+  var taskCountOpt: Option[Int] = None
 
   def createRedisInstance(task: PluginTask): Unit = {
     KeyToRedisOutputPlugin.redis = Some(

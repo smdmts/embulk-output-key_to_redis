@@ -1,5 +1,8 @@
 package org.embulk.output.key_to_redis.redis
 
+import akka.actor._
+import akka.pattern.ask
+import akka.util.Timeout
 import redis.RedisClient
 
 import scala.concurrent._
@@ -10,7 +13,9 @@ case class Redis(setKey: String, host: String, port: Int, db: Option[Int]) {
   implicit val actorSystem = akka.actor.ActorSystem(
     "redis-client",
     classLoader = Some(this.getClass.getClassLoader))
+
   val redis = RedisClient(host, port, db = db)
+  val sender: ActorRef = actorSystem.actorOf(Props(Sender(setKey, redis)))
 
   def ping(): String = {
     import scala.concurrent.ExecutionContext.Implicits.global
@@ -23,8 +28,9 @@ case class Redis(setKey: String, host: String, port: Int, db: Option[Int]) {
     }
     Await.result(s, 10.minute)
   }
-  def sadd(value: String): Future[Long] = {
-    redis.sadd(setKey, value)
+
+  def sadd(value: String): Unit = {
+    sender ! Message(value)
   }
 
   def flush(): Boolean = {
@@ -32,8 +38,20 @@ case class Redis(setKey: String, host: String, port: Int, db: Option[Int]) {
   }
 
   def close(): Unit = {
+    sender ! Close
+    implicit val timeout: Timeout = Timeout(1000.seconds)
+    var finished = false
+    while (!finished) {
+      val f = sender ? GetStatus
+      val result = Await.result(f.mapTo[Result], Duration.Inf)
+      if (!result.finished) {
+        Thread.sleep(1000)
+      } else {
+        finished = result.finished
+      }
+    }
     redis.stop()
-    // wait for stopping.
+    // wait for redis stop.
     Thread.sleep(1000)
     actorSystem.shutdown()
   }

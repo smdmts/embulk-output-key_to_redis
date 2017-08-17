@@ -11,12 +11,10 @@ import org.bouncycastle.util.encoders.Hex
 import org.embulk.output.key_to_redis.redis.Redis
 
 import scala.collection.JavaConverters._
-import scala.concurrent.duration._
-import scala.collection.mutable.ListBuffer
-import scala.concurrent.{Await, Future}
 
 case class PageOutput(taskSource: TaskSource,
                       schema: Schema,
+                      taskCountOpt: Option[Int],
                       putAsMD5: Boolean)
     extends TransactionalPageOutput {
   val task: PluginTask = taskSource.loadTask(classOf[PluginTask])
@@ -25,7 +23,6 @@ case class PageOutput(taskSource: TaskSource,
   def timestampFormatter(): TimestampFormatter =
     new TimestampFormatter(task, Optional.absent())
 
-  val buffer = new ListBuffer[Future[Long]]
   val redis: Redis =
     KeyToRedisOutputPlugin.redis.getOrElse(sys.error("could not find redis."))
 
@@ -45,21 +42,21 @@ case class PageOutput(taskSource: TaskSource,
         if (putAsMD5) {
           val hash = Hex.toHexString(
             digestMd5.digest(setValueVisitor.getValue.getBytes()))
-          buffer.append(redis.sadd(hash))
+          redis.sadd(hash)
         } else {
-          buffer.append(redis.sadd(setValueVisitor.getValue))
+          redis.sadd(setValueVisitor.getValue)
         }
       }
     }
     reader.close()
   }
-
   override def finish(): Unit = {
-    import scala.concurrent.ExecutionContext.Implicits.global
-    val sequence = Future.sequence(buffer)
-    Await.result(sequence, Duration.Inf)
+    // for map/reduce executor.
+    if (taskCountOpt.isEmpty) {
+      // close immediately.
+      redis.close()
+    }
   }
-
   override def close(): Unit = ()
   override def commit(): TaskReport = Exec.newTaskReport
   override def abort(): Unit = ()
