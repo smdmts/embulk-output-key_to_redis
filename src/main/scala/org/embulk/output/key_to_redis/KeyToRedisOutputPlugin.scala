@@ -14,11 +14,15 @@ class KeyToRedisOutputPlugin extends OutputPlugin {
                            control: OutputPlugin.Control): ConfigDiff = {
     val task = config.loadConfig(classOf[PluginTask])
     KeyToRedisOutputPlugin.createRedisInstance(task)
+    KeyToRedisOutputPlugin.redis.foreach(_.ping())
     KeyToRedisOutputPlugin.taskCountOpt = Some(taskCount)
     if (task.getFlushOnStart) {
       KeyToRedisOutputPlugin.redis.foreach(_.flush())
+    } else {
+      if (task.getDeleteKeyOnStart) {
+        KeyToRedisOutputPlugin.redis.foreach(_.deleteKey())
+      }
     }
-    KeyToRedisOutputPlugin.redis.foreach(_.ping())
     control.run(task.dump())
     KeyToRedisOutputPlugin.redis.foreach(_.close())
     Exec.newConfigDiff

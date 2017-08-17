@@ -13,6 +13,10 @@ trait PluginTask extends Task with TimestampFormatter.Task {
   @ConfigDefault("false")
   def getFlushOnStart: Boolean
 
+  @Config("delete_key_on_start")
+  @ConfigDefault("false")
+  def getDeleteKeyOnStart: Boolean
+
   @Config("put_as_md5")
   @ConfigDefault("false")
   def getPutAsMD5: Boolean

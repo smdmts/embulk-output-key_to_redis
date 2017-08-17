@@ -29,6 +29,18 @@ case class Redis(setKey: String, host: String, port: Int, db: Option[Int]) {
     Await.result(s, 10.minute)
   }
 
+  def deleteKey(): Long = {
+    import scala.concurrent.ExecutionContext.Implicits.global
+    val s: Future[Long] = redis.del(setKey)
+    s.onComplete {
+      case Success(result) => result
+      case Failure(t) =>
+        actorSystem.shutdown()
+        throw t
+    }
+    Await.result(s, 10.minute)
+  }
+
   def sadd(value: String): Unit = {
     sender ! Message(value)
   }
